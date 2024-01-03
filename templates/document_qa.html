@@ -1,0 +1,225 @@
+{% extends "index.html" %}
+{% block title %}Document Question and Answer{% endblock %}
+{% block body %}
+<style>
+  /* Add this CSS to your existing stylesheet or create a new one */
+  .upload-container {
+        background-color: #fff;
+        margin-top: 50px;
+        padding: 50px;
+        /* padding: 20px; */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    form {
+        margin-top: 15px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 50px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .input-container {
+        background-color: #fff;
+        margin-top: 25px;
+        padding: 20px;
+        /* padding: 20px; */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+   
+    .chat-input {
+        padding: 15px;
+        margin-top: 5px;
+        /* Increase padding for more height */
+        font-size: 18px;
+        /* Increase font size */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+        width: 900px;
+        flex-grow: 2;
+        /* Adjust flex-grow for width */
+    }
+    h3 {
+      padding-top: 10px;
+    }
+  #loadingSpinner {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: #333;
+  }
+
+  /* Optional: Customize the spinner animation */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  #loadingSpinner::before {
+    content: '';
+    box-sizing: border-box;
+    width: 24px;
+    height: 24px;
+    border: 4px solid #ccc;
+    border-top: 4px solid #333;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+
+  
+</style>
+{% for message in messages %}
+<div
+  class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
+  role="alert">
+  <strong>
+    {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning'%}Warning:{% endif %}
+  </strong> {{ message }}
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+{% endfor %}
+
+<div class="container ">
+  <div class="container upload-container">
+    <input type="file" id="fileInput">
+    <button type="button" onclick="uploadFile()">Start</button>
+  </form>
+
+  </div><form id="fileForm" enctype="multipart/form-data">
+   
+  <div id="loadingSpinner" style="display: none;">
+    <!-- Replace this with your loading indicator or spinner -->
+    Loading...
+  </div>
+  <div id="textInputContainer" style="display: none;">
+    <div class="input-container">
+
+      <h3>Ask Questions</h3>
+      <form id="textInputForm">
+        <input type="text" id="userInput" class="chat-input" placeholder="Type your message...">
+        <button type="button" onclick="submitUserInput()">Submit</button>
+      </form>
+    </div><h3>
+   
+  </div>
+
+  <!-- Display user input result -->
+  <div id="userInputResult" style="display: none;">
+    <h3>User Input Result</h3>
+    <p id="userInputDisplay"></p>
+  </div>
+</div>
+
+<script>
+  function uploadFile() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const csrftoken = getCookie('csrftoken');
+      const headers = new Headers({
+        'X-CSRFToken': csrftoken
+      });
+
+      fetch('upload_file', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data.message);
+          alert(data.message);
+
+          // Show the text input area after successful file upload
+          document.getElementById('textInputContainer').style.display = 'block';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred. Please try again.');
+        });
+    } else {
+      alert('Please select a file.');
+    }
+  }
+  function submitUserInput() {
+    const userInput = document.getElementById('userInput').value;
+
+    if (userInput.trim() !== '') {
+      document.getElementById('loadingSpinner').style.display = 'block';
+      const csrftoken = getCookie('csrftoken');
+      const headers = new Headers({
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
+      });
+
+      const data = {
+        user_data: userInput
+      };
+
+      fetch('read_input', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(data)
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);  // Log the entire response for debugging purposes
+
+          // Update the UI with the questions and answers string
+          document.getElementById('loadingSpinner').style.display = 'none';
+          displayQuestionsAndAnswers(data.questions_and_answers);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred. Please try again.');
+        });
+    } else {
+      alert('Please enter a valid input.');
+    }
+  }
+
+  function displayQuestionsAndAnswers(questionsAndAnswers) {
+    // Display questions and answers string in the UI (modify this based on your HTML structure)
+    const resultContainer = document.getElementById('userInputResult');
+    resultContainer.innerHTML = `<h3>Answers</h3><p>${questionsAndAnswers}</p>`;
+    resultContainer.style.display = 'block';
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "index.html" %}
+{% block title %}User{% endblock %}
+{% block body %}
+
+{% for message in messages %}
+<div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
+    role="alert">
+    <strong>
+        {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% endif %}
+    </strong> {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{% endfor %}
+
+<div class="container">
+    <h1>User Page</h1>
+</div>
+
+<div class="container">
+    <div class="course-list">
+        {% for course in courses %}
+            <div class="course-item">
+                <strong>Username:</strong> {{ course.username }}<br>
+                <strong>Course Name:</strong> {{ course.course_name }}<br>
+                <strong>Course Description:</strong> {{ course.course_description }}<br>
+                <form action="{% url 'unenroll_course' course.course_name %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Unenroll</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .course-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .course-item {
+        flex: 0 0 300px;  /* Set the width of each course item */
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+
+{% endblock %}

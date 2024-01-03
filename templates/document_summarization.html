@@ -1,0 +1,114 @@
+{% extends "index.html" %}
+{% block title %}Document Summary{% endblock %}
+{% block body %}
+
+<style>
+    .upload-container {
+        background-color: #fff;
+        margin-top: 100px;
+        padding: 50px;
+        /* padding: 20px; */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    form {
+        margin-top: 15px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 5px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    
+    .summary {
+        margin-top: 50px;
+    }
+
+    .button-container {
+        padding-top: 20px;
+    }
+
+    pre {
+        white-space: pre-wrap;
+    }
+
+    .loading-container {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .loading-spinner {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+{% for message in messages %}
+    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
+        role="alert">
+        <strong>
+            {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% endif %}
+        </strong> {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+{% endfor %}
+
+<div class="container">
+    <div class="upload-container container">
+        <h2>Upload a Text File</h2>
+        <form id="uploadForm" action="document_summarization" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="file"/>
+            <div class="button-container">
+                <button type="submit" onclick="showLoading()">Summarize Document</button>
+            </div>
+        </form>
+    </div>
+    <!-- Loading container -->
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    {% if file_summary %}
+        <div class="container summary">
+            <h2>Summary:</h2>
+            <p>{{ file_summary }}</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add JavaScript to show/hide the loading container -->
+<script>
+    document.getElementById("uploadForm").addEventListener("submit", function() {
+        document.getElementById("loadingContainer").style.display = "block";
+    });
+</script>
+
+{% endblock %}

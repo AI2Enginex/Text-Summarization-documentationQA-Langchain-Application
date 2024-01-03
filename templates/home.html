@@ -1,0 +1,15 @@
+{% extends "index.html" %}
+{% block title %}Home{% endblock %}
+{% block body %}
+{% for message in messages %}            
+  <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show" role="alert">
+    <strong>
+      {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% endif %}
+    </strong> {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+{% endfor %}
+<h1>welcome to Home page</h1>
+{% endblock %}

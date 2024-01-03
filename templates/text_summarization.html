@@ -1,0 +1,135 @@
+{% extends "index.html" %}
+{% block title %}Text Summarization{% endblock %}
+{% block body %}
+
+<style>
+    .chat-input-container {
+        background-color: white;
+        padding-top: 70px;
+        padding: 50px;
+        display: flex;
+        align-items: center;
+        margin-left: 100px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-input {
+        padding: 15px;
+        /* Increase padding for more height */
+        font-size: 18px;
+        /* Increase font size */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+        width: 900px;
+        flex-grow: 2;
+        /* Adjust flex-grow for width */
+    }
+
+    .chat-button {
+        padding: 15px;
+        /* Increase padding for more height */
+        font-size: 18px;
+        /* Increase font size */
+        background-color: #4CAF50;
+        color: white;
+        border: 1px solid #4CAF50;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .chat-button:hover {
+        background-color: #45a049;
+    }
+
+    h1 {
+        color: #7c795d;
+        font-family: 'Trocchi', serif;
+        font-size: 45px;
+        font-weight: normal;
+        line-height: 48px;
+        margin: 0;
+        padding-top: 55px;
+    }
+    .summary {
+        padding-top: 50px;
+
+    }
+    .loading-container {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .loading-spinner {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+{% for message in messages %}
+    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
+        role="alert">
+        <strong>
+            {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% endif %}
+        </strong> {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+{% endfor %}
+
+<div class="container">
+    <center>
+        <h1>Text Summarization</h1>
+    </center>
+</div>
+
+<div class="container">
+
+    
+    <div class="chat-input-container">
+        <form id="summarizeForm" action="summarize_long_text" method="post">{% csrf_token %}
+            <input type="text" name="userinput" class="chat-input" placeholder="Type your message...">
+            <button class="chat-button" onclick="showLoading()">Summarize</button>
+        </form>
+    </div>
+</div>
+
+<!-- Loading container -->
+<div class="loading-container" id="loadingContainer">
+    <div class="loading-spinner"></div>
+    <p>Loading...</p>
+</div>
+
+{% if text_summary %}
+<div class="container summary">
+    <h2>Summary:</h2>
+    <p>{{ text_summary }}</p>
+</div>
+{% else %}
+<div class="loading-container" id="loadingContainer">
+    <div class="loading-spinner"></div>
+    <p>Loading...</p>
+</div>
+{% endif %}
+
+<script>
+    function showLoading() {
+        document.getElementById("loadingContainer").style.display = "block";
+    }
+</script>
+
+    
+{% endblock  %}
