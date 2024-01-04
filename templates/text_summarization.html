@@ -5,8 +5,9 @@
 <style>
     .chat-input-container {
         background-color: white;
-        padding-top: 70px;
+        margin-top: 40px;
         padding: 50px;
+        padding-bottom: 50px;
         display: flex;
         align-items: center;
         margin-left: 100px;
@@ -15,7 +16,7 @@
     }
 
     .chat-input {
-        padding: 15px;
+        padding: 25px;
         /* Increase padding for more height */
         font-size: 18px;
         /* Increase font size */
@@ -29,6 +30,7 @@
 
     .chat-button {
         padding: 15px;
+        margin-top: 10px;
         /* Increase padding for more height */
         font-size: 18px;
         /* Increase font size */
@@ -52,10 +54,14 @@
         margin: 0;
         padding-top: 55px;
     }
+
     .summary {
         padding-top: 50px;
+        padding-left: 120px;
+        justify-content: center;
 
     }
+
     .loading-container {
         display: none;
         text-align: center;
@@ -73,21 +79,27 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
 
 {% for message in messages %}
-    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
-        role="alert">
-        <strong>
-            {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% endif %}
-        </strong> {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
+<div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %} alert-dismissible fade show"
+    role="alert">
+    <strong>
+        {% if message.tags == 'success' %}Success:{% elif message.tags == 'error' %}Error:{% elif message.tags ==
+        'warning' %}Warning:{% endif %}
+    </strong> {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
 {% endfor %}
 
 <div class="container">
@@ -98,10 +110,11 @@
 
 <div class="container">
 
-    
+
     <div class="chat-input-container">
         <form id="summarizeForm" action="summarize_long_text" method="post">{% csrf_token %}
             <input type="text" name="userinput" class="chat-input" placeholder="Type your message...">
+
             <button class="chat-button" onclick="showLoading()">Summarize</button>
         </form>
     </div>
@@ -113,17 +126,22 @@
     <p>Loading...</p>
 </div>
 
-{% if text_summary %}
-<div class="container summary">
-    <h2>Summary:</h2>
-    <p>{{ text_summary }}</p>
+<div class="container">
+
+    {% if text_summary %}
+    <div class="container summary">
+        <h2>Summary:</h2>
+        <p>{{ text_summary }}</p>
+    </div>
+    {% else %}
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+    {% endif %}
+
 </div>
-{% else %}
-<div class="loading-container" id="loadingContainer">
-    <div class="loading-spinner"></div>
-    <p>Loading...</p>
-</div>
-{% endif %}
+
 
 <script>
     function showLoading() {
@@ -131,5 +149,5 @@
     }
 </script>
 
-    
-{% endblock  %}
+
+{% endblock %}
