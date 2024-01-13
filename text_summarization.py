@@ -2,6 +2,7 @@ import os
 import langchain
 import openai
 import warnings
+import textwrap
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
@@ -20,15 +21,16 @@ from langchain.document_loaders import TextLoader
 # converting our text to vectors
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import SpacyTextSplitter
 from langchain.chains.summarize import load_summarize_chain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = 'xx-xxxx'
+os.environ['OPENAI_API_KEY'] = 'xx-xxx'
 key = os.environ.get('OPENAI_API_KEY')
 
 
@@ -60,7 +62,6 @@ class TextSummarisation(OpenAIObject):
     # function for cretaing instruction template
     # this function is used to pass instruction
     # to GPT model for displaying the output
-
     def command_instructions(self):
 
         try:
@@ -68,6 +69,7 @@ class TextSummarisation(OpenAIObject):
              %INSTRUCTIONS:
              please summarize the following piece of text.
              respond in a manner that a 5 years old can understand.
+             
              
              %TEXT:
              {text}
@@ -89,8 +91,6 @@ class TextSummarisation(OpenAIObject):
             return e
 
 # class for generating summary for long text
-
-
 class LongTextSummarisation(OpenAIObject):
 
     def __init__(self, model=None):
@@ -103,17 +103,32 @@ class LongTextSummarisation(OpenAIObject):
 
         try:
             text_splitter = RecursiveCharacterTextSplitter(
-                separators=[".", ","], chunk_size=5000, chunk_overlap=300)
+                separators=["\n\n","\n",".", ","], chunk_size=3000, chunk_overlap=300)
             return text_splitter.create_documents([text])
         except Exception as e:
             return e
+
+    def instruction_prompt(self):
+
+        try:
+            template = '''
+             %INSTRUCTIONS:
+             write a conscise 10 points summary of the following.
+             
+             %TEXT:
+             {text}
+             '''
+            return PromptTemplate(input_variables=["text"],    template=template)
+
+        except Exception as e:
+            pass
 
     # summarizing each batch input
     def summarise_long_text(self, user_input):
 
         try:
             chain = load_summarize_chain(
-                llm=self.llm, chain_type='map_reduce', verbose=True)
+                llm=self.llm, chain_type='stuff', verbose=True, prompt=self.instruction_prompt())
             return chain.run(self.generate_docs(user_input))
         except Exception as e:
             return e
@@ -121,6 +136,9 @@ class LongTextSummarisation(OpenAIObject):
 
 # class for Generating Summary for an
 # entire document
+'''
+in this following code, i have used FAISS vectorstore with embaddings and RetrivelQA to get summary of the document.
+since load_summarize_chain with gpt3.5 and gpt3.5-turbo give problem with large documents
 class DocumentSummarisation(OpenAIObject):
 
     def __init__(self, model=None, filepath=None):
@@ -155,6 +173,77 @@ class DocumentSummarisation(OpenAIObject):
         try:
             chain = load_summarize_chain(llm=self.llm, chain_type='map_reduce')
             return chain.run(self.generating_docs())
+        except Exception as e:
+            return e
+
+
+'''
+class DocumentSummarisation(OpenAIObject):
+
+    def __init__(self, model=None, filepath=None):
+
+        super().__init__(model=model)
+        self.file = filepath
+
+    # loading the text file
+    def load_file(self):
+
+        try:
+            text = open(self.file, 'r', encoding='unicode_escape')
+            return text.read()
+        except Exception as e:
+            return e
+
+    # generating docs for each line
+    # of the file
+    def generating_docs(self):
+
+        try:
+            text_splitter = RecursiveCharacterTextSplitter(
+                separators=[".", ","], chunk_size=1000, chunk_overlap=300)
+            return text_splitter.create_documents([self.load_file()])
+        except Exception as e:
+            return e
+
+    def doc_instruction_prompt(self):
+
+        try:
+            template = ''' %INSTRUCTIONS:
+             write a conscise 10 points summary of the following.
+             
+
+             %TEXT:
+             {text}
+             
+             CONSCISE SUMMARY:
+             '''
+            return PromptTemplate(input_variables=["text"], template=template)
+        except Exception as e:
+            return e
+        
+    def summary_template_design(self, query):
+        try:
+            prompt = self.doc_instruction_prompt()
+            return prompt.format(text=query)
+        except Exception as e:
+            return e
+        
+    def get_embeddings(self):
+        try:
+            return OpenAIEmbeddings(openai_api_key=key)
+        except Exception as e:
+            return e
+
+    # summarizing the docs and generating
+    # overall summary
+    def summarise_doc_text(self):
+        try:
+            doc_batches = self.generating_docs()
+            docsearch = FAISS.from_documents(
+                doc_batches, self.get_embeddings())
+            qa = RetrievalQA.from_chain_type(
+                llm=self.llm, chain_type="stuff", retriever=docsearch.as_retriever())
+            return (qa.run(self.summary_template_design(query="give summary for this document")))
         except Exception as e:
             return e
 
@@ -197,8 +286,12 @@ class DocumentQA(OpenAIObject):
         try:
             template = '''
               %INSTRUCTIONS:
-              Answer the following question only based on the document content, also if any persons name or service name occurs,
-              first search the name in the document and then provide the answer with respect to document content
+              Answer the following question only based on the document content.
+              also if any persons name or service name occurs,first search the name in the document and then provide the answer with respect to document content.
+              check if the prompt is related to the document.
+              if user asks to give the summary of the document, give summary in at least 10 points.
+              if any given text from the prompt is not recognized, or not found in the document simply reply as "sorry!!, may be the thing you are looking for is not found in the document".
+              
           
               %TEXT:
               {text}
