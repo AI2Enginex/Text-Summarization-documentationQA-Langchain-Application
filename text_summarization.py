@@ -30,7 +30,7 @@ from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = 'xx-xxx'
+os.environ['OPENAI_API_KEY'] = 'xxxxxxxxxx'
 key = os.environ.get('OPENAI_API_KEY')
 
 
@@ -113,7 +113,7 @@ class LongTextSummarisation(OpenAIObject):
         try:
             template = '''
              %INSTRUCTIONS:
-             write a conscise 10 points summary of the following.
+             write a conscise point wise summary of the following.
              
              %TEXT:
              {text}
@@ -289,8 +289,8 @@ class DocumentQA(OpenAIObject):
               Answer the following question only based on the document content.
               also if any persons name or service name occurs,first search the name in the document and then provide the answer with respect to document content.
               check if the prompt is related to the document.
-              if user asks to give the summary of the document, give summary in at least 10 points.
               if any given text from the prompt is not recognized, or not found in the document simply reply as "sorry!!, may be the thing you are looking for is not found in the document".
+              
               
           
               %TEXT:
