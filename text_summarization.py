@@ -30,7 +30,7 @@ from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = 'xxxxxxxxxx'
+os.environ['OPENAI_API_KEY'] = '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'
 key = os.environ.get('OPENAI_API_KEY')
 
 
@@ -114,6 +114,8 @@ class LongTextSummarisation(OpenAIObject):
             template = '''
              %INSTRUCTIONS:
              write a conscise point wise summary of the following.
+             display points as hard bullet points.
+             apply fullstop after every point.
              
              %TEXT:
              {text}
@@ -210,6 +212,10 @@ class DocumentSummarisation(OpenAIObject):
         try:
             template = ''' %INSTRUCTIONS:
              write a conscise 10 points summary of the following.
+             display points as bullets insted of numbers.
+             display bullet points as arrows.
+             apply fullstop after every point.
+             try to summarize each content in the document.
              
 
              %TEXT:
