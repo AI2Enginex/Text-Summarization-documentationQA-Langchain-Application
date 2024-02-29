@@ -56,7 +56,7 @@
     }
 
     .summary {
-        padding-top: 50px;
+        padding-top: 40px;
         padding-left: 120px;
         justify-content: center;
 
@@ -131,7 +131,11 @@
     {% if text_summary %}
     <div class="container summary">
         <h2>Summary:</h2>
-        <p>{{ text_summary }}</p>
+        <div class="result">
+            {% for point in text_summary %}
+            <p>{{ point }}</p>
+            {% endfor %}
+            </div>
     </div>
     {% else %}
     <div class="loading-container" id="loadingContainer">
