@@ -30,7 +30,7 @@ from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = 'xx-xxxxxxxx'
+os.environ['OPENAI_API_KEY'] = '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'
 key = os.environ.get('OPENAI_API_KEY')
 
 
@@ -51,7 +51,38 @@ class ChatModelAPI:
         self.chat_model = ChatOpenAI(
             temperature=0, openai_api_key=key, max_tokens=1000)
 
+class SummarizeChains:
 
+    @classmethod
+    def text_summarise(cls,model,chain,prompt):
+        try:
+            return load_summarize_chain(
+                llm=model, chain_type=chain, verbose=True, prompt=prompt)
+        except Exception as e:
+            return e
+
+class TextSplitter:
+
+    @classmethod
+    def split_character(cls, seprator=None, chunksize=None, chunkoverlap=None):
+
+        try:
+            return RecursiveCharacterTextSplitter(seprator, chunksize, chunkoverlap)
+        except Exception as e:
+            return e
+
+
+class QARetrival:
+
+    @classmethod
+    def retrivalqa(cls, chain, docs, embeddings, model):
+        try:
+            docsearch = FAISS.from_documents(
+                docs, embeddings)
+            return RetrievalQA.from_chain_type(
+                llm=model, chain_type=chain, retriever=docsearch.as_retriever())
+        except Exception as e:
+            return e
 # creating summarisation class for
 # creating summary for any given text
 class TextSummarisation(OpenAIObject):
@@ -74,7 +105,7 @@ class TextSummarisation(OpenAIObject):
              %TEXT:
              {text}
              '''
-            return PromptTemplate(input_variables=["text"],    template=template)
+            return PromptTemplate(input_variables=["text"], template=template)
 
         except Exception as e:
             pass
@@ -90,6 +121,9 @@ class TextSummarisation(OpenAIObject):
         except Exception as e:
             return e
 
+
+
+
 # class for generating summary for long text
 class LongTextSummarisation(OpenAIObject):
 
@@ -99,12 +133,11 @@ class LongTextSummarisation(OpenAIObject):
 
     # creating documents for the large text inputs
     # passing the input as batch to the model
-    def generate_docs(self, text):
+    def generate_docs(self, delimeter=None, size=None, overlap=None, text=None):
 
         try:
-            text_splitter = RecursiveCharacterTextSplitter(
-                separators=["\n\n","\n",".", ","], chunk_size=3000, chunk_overlap=300)
-            return text_splitter.create_documents([text])
+
+            return TextSplitter().split_character(seprator=delimeter, chunksize=size, chunkoverlap=overlap).create_documents([text])
         except Exception as e:
             return e
 
@@ -126,12 +159,11 @@ class LongTextSummarisation(OpenAIObject):
             pass
 
     # summarizing each batch input
-    def summarise_long_text(self, user_input):
+    def summarise_long_text(self, delimeter=None, size=None, overlap=None,user_input=None):
 
         try:
-            chain = load_summarize_chain(
-                llm=self.llm, chain_type='stuff', verbose=True, prompt=self.instruction_prompt())
-            return chain.run(self.generate_docs(user_input))
+            chain = SummarizeChains().text_summarise(model=self.llm,chain='stuff',prompt=self.instruction_prompt())
+            return chain.run(self.generate_docs(delimeter, size, overlap,user_input))
         except Exception as e:
             return e
 
@@ -188,22 +220,22 @@ class DocumentSummarisation(OpenAIObject):
         self.file = filepath
 
     # loading the text file
+
     def load_file(self):
 
         try:
             text = open(self.file, 'r', encoding='unicode_escape')
             return text.read()
+
         except Exception as e:
             return e
 
     # generating docs for each line
     # of the file
-    def generating_docs(self):
+    def generating_docs(self, delimeter=None, size=None, overlap=None):
 
         try:
-            text_splitter = RecursiveCharacterTextSplitter(
-                separators=[".", ","], chunk_size=1000, chunk_overlap=300)
-            return text_splitter.create_documents([self.load_file()])
+            return TextSplitter().split_character(seprator=delimeter, chunksize=size, chunkoverlap=overlap).create_documents([self.load_file()])
         except Exception as e:
             return e
 
@@ -226,14 +258,14 @@ class DocumentSummarisation(OpenAIObject):
             return PromptTemplate(input_variables=["text"], template=template)
         except Exception as e:
             return e
-        
+
     def summary_template_design(self, query):
         try:
             prompt = self.doc_instruction_prompt()
             return prompt.format(text=query)
         except Exception as e:
             return e
-        
+
     def get_embeddings(self):
         try:
             return OpenAIEmbeddings(openai_api_key=key)
@@ -242,14 +274,9 @@ class DocumentSummarisation(OpenAIObject):
 
     # summarizing the docs and generating
     # overall summary
-    def summarise_doc_text(self):
+    def summarise_doc_text(self, delimeter=None, size=None, overlap=None, user_query=None):
         try:
-            doc_batches = self.generating_docs()
-            docsearch = FAISS.from_documents(
-                doc_batches, self.get_embeddings())
-            qa = RetrievalQA.from_chain_type(
-                llm=self.llm, chain_type="stuff", retriever=docsearch.as_retriever())
-            return (qa.run(self.summary_template_design(query="give summary for this document")))
+            return (QARetrival.retrivalqa(chain='stuff', docs=self.generating_docs(delimeter, size, overlap), embeddings=self.get_embeddings(), model=self.llm).run(self.summary_template_design(query=user_query)))
         except Exception as e:
             return e
 
@@ -263,6 +290,7 @@ class DocumentQA(OpenAIObject):
         self.file = filepath
 
     # function for loading file
+
     def load_file(self):
 
         try:
@@ -272,12 +300,10 @@ class DocumentQA(OpenAIObject):
             return e
 
     # function for creating batch inputs
-    def create_batch(self):
+    def create_batch(self, delimeter=None, size=None, overlap=None):
 
         try:
-            textsplitter = RecursiveCharacterTextSplitter(
-                chunk_size=2500, chunk_overlap=250)
-            return textsplitter.split_documents(self.load_file())
+            return TextSplitter().split_character(seprator=delimeter, chunksize=size, chunkoverlap=overlap).split_documents(self.load_file())
         except Exception as e:
             return e
 
@@ -313,14 +339,10 @@ class DocumentQA(OpenAIObject):
         except Exception as e:
             return e
 
-    def run_engine(self, query):
+    def run_engine(self, delimeter=None, size=None, overlap=None, query=None):
         try:
-            doc_batches = self.create_batch()
-            docsearch = FAISS.from_documents(
-                doc_batches, self.get_embeddings())
-            qa = RetrievalQA.from_chain_type(
-                llm=self.llm, chain_type="stuff", retriever=docsearch.as_retriever())
-            return (qa.run(self.prompt_template_design(query)))
+
+            return (QARetrival.retrivalqa(chain='stuff', docs=self.create_batch(delimeter, size, overlap), embeddings=self.get_embeddings(), model=self.llm).run(self.prompt_template_design(query=query)))
         except Exception as e:
             return e
 
@@ -406,14 +428,3 @@ class ContextMapping(ChatModelAPI):
 
 if __name__ == '__main__':
     pass
-    # t = TextSummarisation(model='text-davinci-003')
-    # print(t.summarise_text(user_input="The market continued its uptrend journey for yet another session with the Nifty50 scaling past the 19,800 mark, taking support at 19,750 throughout the day on October 11. Hence, as long as the index holds the 19,800-19,750 area, reaching 20,000 points seems possible in the coming sessions, whereas on other side, the 19,700-19,600 zone is likely to act as a support in case of correction, experts said.The Nifty50 jumped 122 points to 19,811, and the BSE Sensex climbed 394 points to 66,473, while market breadth remained positive in the ratio of 2:1. The Nifty Midcap 100 and Smallcap 100 indices also participated in the run, rising half a percent and eight-tenth of a percent"))
-
-    # l = LongTextSummarisation(model=None)
-    # print(l.summarise_long_text(user_input="Prabhudas Lilladher has come out with its second quarter (July-September’ 24) earnings estimates for the Consumer Durables sector. The brokerage house expects Bajaj Electricals to report net profit at Rs. 58.5 crore down 8.5% year-on-year (up 35.9% quarter-on-quarter).Net Sales are expected to decrease by 0.4 percent Y-o-Y (up 9.3 percent Q-o-Q) to Rs. 1,215.7 crore, according to Prabhudas Lilladher.Earnings before interest, tax, depreciation and amortisation (EBITDA) are likely to fall by 5.4 percent Y-o-Y (up 28 percent Q-o-Q) to Rs. 88.7 crore.Disclaimer: The views and investment tips expressed by investment experts on moneycontrol.com are their own, and not that of the website or its management. Moneycontrol.com advises users to check with certified experts before taking any investment decisions."))
-
-    # ds = DocumentQA(filepath='E:\MoneyControl Data Scraping\data.txt')
-    # print(ds.run_engine("what is the document all about"))
-
-    # doc_summary = DocumentSummarisation(filepath='E:\MoneyControl Data Scraping\data.txt')
-    # print(doc_summary.summarise_doc_text())
