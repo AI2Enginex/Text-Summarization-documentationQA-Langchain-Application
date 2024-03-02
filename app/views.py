@@ -25,25 +25,25 @@ class TextAnalysis:
     def long_text(cls, user_input):
 
         try:
-            t = LongTextSummarisation(model=None)
+            t = LongTextSummarisation(model='gpt-3.5-turbo-instruct')
             return t.summarise_long_text(user_input=user_input)
         except Exception as e:
             return e
 
     @classmethod
-    def summarize_doc(cls, filename):
+    def summarize_doc(cls, filename,user_input):
         try:
-            docs = DocumentSummarisation(model=None, filepath=filename)
-            return docs.summarise_doc_text()
+            docs = DocumentSummarisation(model='gpt-3.5-turbo-instruct', filepath=filename)
+            return docs.summarise_doc_text(delimeter=['.',','],size=1000,overlap=300,user_query=user_input)
         except Exception as e:
             return e
     
     @classmethod
-    def question_answer(clas, filename,user_question):
+    def question_answer(cls, filename,user_question):
 
         try:
-            que_ = DocumentQA(filepath=filename)
-            return que_.run_engine(query=user_question)
+            que_ = DocumentQA(model='gpt-3.5-turbo-instruct',filepath=filename)
+            return que_.run_engine(size=1000,overlap=300,query=user_question)
         except Exception as e:
             return e
     
@@ -260,6 +260,7 @@ def summarize_long_text(request):
             return redirect("textsummarization")
 
         summary = TextAnalysis.long_text(user_input=userinput)
+        summary = summary.split('\n')
         return render(request, 'text_summarization.html', {'text_summary': summary})
     else:
         messages.error(request, "Please Login first")
@@ -272,14 +273,16 @@ def doc_summary_generator(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             uploaded_file = request.FILES['file']
-            upload_dir = 'G:/react-django/django_sessions/uploads'
+            upload_dir = 'E:/react-django/django_sessions/uploads'
             os.makedirs(upload_dir, exist_ok=True)
             fs = FileSystemStorage(location=upload_dir)
             saved_file = fs.save(uploaded_file.name, uploaded_file)
             file_path = os.path.join(upload_dir + "/"+saved_file)
-            print(file_path)
-            doc_summary = TextAnalysis.summarize_doc(filename=file_path)
-            return render(request, 'document_summarization.html', {'file_summary': doc_summary})
+            file_name = str(uploaded_file).split('.')[0]
+            doc_summary = TextAnalysis.summarize_doc(filename=file_path,user_input='give summary for this document')
+            doc_summary = doc_summary.split('\n')
+            
+            return render(request, 'document_summarization.html', {'file_summary': doc_summary, 'file': file_name})
     else:
         messages.error(request, "login first")
         return redirect("doc_page")
@@ -304,13 +307,13 @@ def upload_file(request):
             return JsonResponse({'message': 'file uploaded successfully'})
     else:
         messages.error(request, "please login first")
-        return redirect("document_qa")
+        return redirect("qa")
 
     return JsonResponse({'message': 'Invalid request'}, status=400)
 
 def process_uploaded_file(uploaded_file):
     try:
-        upload_dir = 'G:/react-django/django_sessions/uploads'
+        upload_dir = 'E:/react-django/django_sessions/uploads'
         return upload_dir
     except Exception as e:
         return f'Error processing file: {str(e)}'
@@ -326,6 +329,7 @@ def document_question_answer(request):
             user_data = data.get('user_data', '')
             user_data = cleantext.clean(user_data,extra_spaces=True,lowercase=True)
             user_input += user_data
+            print(user_input)
             questions_and_answers = TextAnalysis.question_answer(filename=filepath, user_question=user_input)
             
             response_data = {'questions_and_answers': str(questions_and_answers)}
