@@ -30,7 +30,7 @@ from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = 'xx-xxxx'
 key = os.environ.get('OPENAI_API_KEY')
 
 
