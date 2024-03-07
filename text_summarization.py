@@ -30,7 +30,7 @@ from langchain.chat_models import ChatOpenAI
 import pandas as pd
 import json
 warnings.filterwarnings('ignore')
-os.environ['OPENAI_API_KEY'] = 'xxxxxxxxxxxx'
+os.environ['OPENAI_API_KEY'] = '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'
 key = os.environ.get('OPENAI_API_KEY')
 
 
@@ -50,6 +50,19 @@ class ChatModelAPI:
     def __init__(self):
         self.chat_model = ChatOpenAI(
             temperature=0, openai_api_key=key, max_tokens=1000)
+        
+
+class LoadFileAsDocument:
+
+    @classmethod
+    def load_file_as_doc(cls,file_name):
+
+        try:
+            loader = TextLoader(file_name, encoding='unicode_escape')
+            return loader.load()
+        except Exception as e:
+            return e
+
 
 class SummarizeChains:
 
@@ -224,9 +237,7 @@ class DocumentSummarisation(OpenAIObject):
     def load_file(self):
 
         try:
-            text = open(self.file, 'r', encoding='unicode_escape')
-            return text.read()
-
+            return LoadFileAsDocument().load_file_as_doc(file_name=self.file)
         except Exception as e:
             return e
 
@@ -235,7 +246,7 @@ class DocumentSummarisation(OpenAIObject):
     def generating_docs(self, delimeter=None, size=None, overlap=None):
 
         try:
-            return TextSplitter().split_character(seprator=delimeter, chunksize=size, chunkoverlap=overlap).create_documents([self.load_file()])
+            return TextSplitter().split_character(seprator=delimeter, chunksize=size, chunkoverlap=overlap).split_documents(self.load_file())
         except Exception as e:
             return e
 
@@ -282,7 +293,7 @@ class DocumentSummarisation(OpenAIObject):
 
 
 # class for Questning Answering
-# fro the given document
+# for the given document
 class DocumentQA(OpenAIObject):
 
     def __init__(self, model=None, filepath=None):
@@ -294,8 +305,7 @@ class DocumentQA(OpenAIObject):
     def load_file(self):
 
         try:
-            loader = TextLoader(self.file, encoding='unicode_escape')
-            return loader.load()
+            return LoadFileAsDocument().load_file_as_doc(file_name=self.file)
         except Exception as e:
             return e
 
